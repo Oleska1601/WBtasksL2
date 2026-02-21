@@ -5,20 +5,24 @@ import (
 	"time"
 )
 
-// вариант 1: for - select для чтения из всех каналов
+// рекурсивно объединять каналы
 func or(channels ...<-chan interface{}) <-chan interface{} {
+	if len(channels) == 0 {
+		return nil
+	}
+	if len(channels) == 1 {
+		return channels[0]
+	}
 	done := make(chan interface{})
 	go func() {
 		defer close(done)
 		for {
-			for _, ch := range channels {
-				select {
-				case <-ch: // если канал закрыт -> выход -> закрытие done канала
-					return
-				default:
-				}
+			select {
+			case <-channels[0]:
+				return
+			case <-or(channels[1:]...):
+				return
 			}
-
 		}
 	}()
 	return done
